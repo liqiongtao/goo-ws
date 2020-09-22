@@ -39,48 +39,48 @@ func TailF(filename string) gin.HandlerFunc {
 	}
 }
 
-func (this *tailF) read() {
+func (tf *tailF) read() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer func() {
 		ticker.Stop()
-		this.conn.Close()
+		tf.conn.Close()
 	}()
 	for {
 		select {
 		case <-ticker.C:
-			this.getData()
+			tf.getData()
 		}
 	}
 }
 
-func (this *tailF) write() {
+func (tf *tailF) write() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		this.conn.Close()
+		tf.conn.Close()
 	}()
 	for {
 		select {
 		case <-ticker.C:
-			this.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := this.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			tf.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := tf.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
-		case message := <-this.send:
-			this.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := this.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+		case message := <-tf.send:
+			tf.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := tf.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		}
 	}
 }
 
-func (this *tailF) getData() {
-	if this.filename == "" {
-		this.filename = "log.log"
+func (tf *tailF) getData() {
+	if tf.filename == "" {
+		tf.filename = "log.log"
 	}
 
-	file, err := os.Open(this.filename)
+	file, err := os.Open(tf.filename)
 	if err != nil {
 		log.Println(err.Error())
 		return
@@ -90,16 +90,16 @@ func (this *tailF) getData() {
 	info, _ := file.Stat()
 	size := info.Size()
 
-	if this.fileOffset == size {
+	if tf.fileOffset == size {
 		return
 	}
 
-	if this.fileOffset == 0 && size > maxMessageSize*2 {
-		this.fileOffset = size - maxMessageSize*2
+	if tf.fileOffset == 0 && size > maxMessageSize*2 {
+		tf.fileOffset = size - maxMessageSize*2
 	}
 
-	file.Seek(this.fileOffset, 1)
-	this.fileOffset = size
+	file.Seek(tf.fileOffset, 1)
+	tf.fileOffset = size
 
 	data := []byte{}
 	for {
@@ -119,5 +119,5 @@ func (this *tailF) getData() {
 	data = bytes.Replace(data, []byte("\x1b[35m"), []byte(""), -1)
 	data = bytes.Replace(data, []byte("\x1b[36m"), []byte(""), -1)
 
-	this.send <- []byte(url.PathEscape(string(data)))
+	tf.send <- []byte(url.PathEscape(string(data)))
 }

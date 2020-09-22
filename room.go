@@ -16,23 +16,23 @@ func NewRoom() *Room {
 	}
 }
 
-func (this *Room) Run() {
+func (r *Room) Run() {
 	for {
 		select {
-		case client := <-this.register:
-			this.clients[client] = true
-		case client := <-this.unregister:
-			if _, ok := this.clients[client]; ok {
+		case client := <-r.register:
+			r.clients[client] = true
+		case client := <-r.unregister:
+			if _, ok := r.clients[client]; ok {
 				close(client.send)
-				delete(this.clients, client)
+				delete(r.clients, client)
 			}
-		case message := <-this.broadcast:
-			for client := range this.clients {
+		case message := <-r.broadcast:
+			for client := range r.clients {
 				select {
 				case client.send <- message:
 				default:
 					close(client.send)
-					delete(this.clients, client)
+					delete(r.clients, client)
 				}
 			}
 		}

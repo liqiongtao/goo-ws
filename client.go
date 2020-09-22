@@ -27,10 +27,10 @@ func NewClient(room *Room, c *gin.Context) {
 	go client.read()
 }
 
-func (this *Client) read() {
+func (c *Client) read() {
 
 }
 
-func (this *Client) write() {
+func (c *Client) write() {
 
 }
